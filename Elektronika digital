@@ -1,0 +1,47 @@
+const int MQ2_PIN = A0; // Analog pin connected to the MQ-2 sensor
+const int relayPin = 3;
+const int buzzerPin = 4;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(MQ2_PIN, INPUT);
+  pinMode(relayPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  digitalWrite(relayPin, LOW);
+  digitalWrite(buzzerPin, LOW);
+}
+
+void loop() {
+  int sensorValue = analogRead(MQ2_PIN); // Read analog value from the sensor
+  float voltage = sensorValue * (5.0 / 1023.0); // Convert analog value to voltage (assuming 5V reference)
+ 
+  // Calculate the gas concentration using the sensor calibration values
+  // You may need to adjust these values based on your specific sensor
+  float sensorVoltageCleanAir = 1.0; // Voltage in clean air (adjust if needed)
+  float sensorVoltageGas = 5.0; // Voltage in the presence of gas (adjust if needed)
+  float sensorSlope = (sensorVoltageGas - sensorVoltageCleanAir) / 1.0; // Slope of the calibration curve
+  float sensorIntercept = sensorVoltageCleanAir - (sensorSlope * 1.0); // Intercept of the calibration curve
+  float gasConcentration = (voltage - sensorIntercept) / sensorSlope; // Calculate gas concentration
+
+  Serial.print("Sensor Value: ");
+  Serial.print(sensorValue);
+  Serial.print(", Voltage: ");
+  Serial.print(voltage);
+  Serial.print("V, Gas Concentration: ");
+  Serial.print(gasConcentration);
+  Serial.println(" ppm");
+
+  if (gasConcentration >= 1) {
+    digitalWrite(relayPin, HIGH);
+    digitalWrite(buzzerPin, HIGH);
+    delay(100);
+    digitalWrite(buzzerPin, LOW);
+    delay(3000);
+  } else {
+    digitalWrite(relayPin, LOW);
+    digitalWrite(buzzerPin, LOW);
+  }
+
+  delay(1000); // Delay for 1 second before taking the next reading
+}
