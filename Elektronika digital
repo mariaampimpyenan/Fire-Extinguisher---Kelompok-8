@@ -1,47 +1,68 @@
-const int MQ2_PIN = A0; // Analog pin connected to the MQ-2 sensor
-const int relayPin = 3;
-const int buzzerPin = 4;
+const int MQ2_PIN = A0; // pin Analog (A0) terhubung ke sensor MQ-2
+const int MQ9_PIN = A1; // pin Analog (A1) terhubung ke sensor MQ-9
+const int relayPin = 3; // pin Digital (pin 3) terhubung ke relay module
+const int buzzerPin = 4; // pin Digital (pin 4) terhubung ke buzzer
 
-void setup() {
-  Serial.begin(9600);
-  pinMode(MQ2_PIN, INPUT);
-  pinMode(relayPin, OUTPUT);
-  pinMode(buzzerPin, OUTPUT);
+void setup() { 
+  Serial.begin(9600);// Menginisialisasi komunikasi serial dengan baud rate 9600 untuk debugging melalui Serial Monitor
+  pinMode(MQ2_PIN, INPUT); // pin MQ2 adalah input
+  pinMode(MQ9_PIN, INPUT); // pin MQ9 adalah input
+  pinMode(relayPin, OUTPUT); // relayPin adalah output
+  pinMode(buzzerPin, OUTPUT); // buzzerPin adalah output
 
-  digitalWrite(relayPin, LOW);
-  digitalWrite(buzzerPin, LOW);
+  digitalWrite(relayPin, LOW); // set nilai awal relayPin adalah LOW (mati)
+  digitalWrite(buzzerPin, LOW); // set nilai awal buzzerPin adalah LOW (mati)
 }
 
 void loop() {
-  int sensorValue = analogRead(MQ2_PIN); // Read analog value from the sensor
-  float voltage = sensorValue * (5.0 / 1023.0); // Convert analog value to voltage (assuming 5V reference)
+  int sensorValueMQ2 = analogRead(MQ2_PIN); // Membaca nilai analog dari sensor MQ-2
+  float voltageMQ2 = sensorValueMQ2 * (5.0 / 1023.0); // Mengkonversi nilai analog menjadi nilai tegangan
+  int sensorValueMQ9 = analogRead(MQ9_PIN); // Membaca nilai analog dari sensor MQ-9
+  float voltageMQ9 = sensorValueMQ9 * (5.0 / 1023.0); // Mengkonversi nilai analog menjadi nilai tegangan
  
-  // Calculate the gas concentration using the sensor calibration values
-  // You may need to adjust these values based on your specific sensor
-  float sensorVoltageCleanAir = 1.0; // Voltage in clean air (adjust if needed)
-  float sensorVoltageGas = 5.0; // Voltage in the presence of gas (adjust if needed)
-  float sensorSlope = (sensorVoltageGas - sensorVoltageCleanAir) / 1.0; // Slope of the calibration curve
-  float sensorIntercept = sensorVoltageCleanAir - (sensorSlope * 1.0); // Intercept of the calibration curve
-  float gasConcentration = (voltage - sensorIntercept) / sensorSlope; // Calculate gas concentration
+  // Menghitung konsentrasi gas menggunakan nilai kalibrasi sensor.
+  float sensorVoltageCleanAir = 1.0; // Tegangan di udara bersih
+  float sensorVoltageGas = 5.0; // Tegangan disekitar keberadaan gas
+  float sensorSlope = (sensorVoltageGas - sensorVoltageCleanAir) / 1.0; // Kemiringan kurva kalibrasi
+  float sensorIntercept = sensorVoltageCleanAir - (sensorSlope * 1.0); // Titik potong kurva kalibrasi 
+  float gasConcentrationMQ2 = (voltageMQ2 - sensorIntercept) / sensorSlope; // Menghitung konsentrasi gas MQ-2
+  float gasConcentrationMQ9 = (voltageMQ9 - sensorIntercept) / sensorSlope; // Menghitung konsentrasi gas MQ-9
+  Serial.print("MQ-2 Sensor Value: "); // "MQ-2 Sensor Value: " dicetak ke serial monitor
+  Serial.print(sensorValueMQ2); // nilai sensor dicetak ke serial monitor
+  Serial.print(", Voltage: "); // ", Voltage" dicetak ke serial monitor
+  Serial.print(voltageMQ2); // Nilai tegangan dicetak ke serial monitor
+  Serial.print("V, Gas Concentration: "); // "V, Gas Concentration: " dicetak ke serial monitor
+  Serial.print(gasConcentrationMQ2); // Nilai konsentrasi gas dicetak ke serial monitor
+  Serial.println(" ppm"); // satuan konsentrasi gas (ppm) dicetak ke serial monitor
 
-  Serial.print("Sensor Value: ");
-  Serial.print(sensorValue);
-  Serial.print(", Voltage: ");
-  Serial.print(voltage);
-  Serial.print("V, Gas Concentration: ");
-  Serial.print(gasConcentration);
-  Serial.println(" ppm");
+  Serial.print("MQ-9 Sensor Value: "); // "MQ-9 Sensor Value: " dicetak ke serial monitor
+  Serial.print(sensorValueMQ9); // nilai sensor dicetak ke serial monitor
+  Serial.print(", Voltage: "); // ", Voltage" dicetak ke serial monitor
+  Serial.print(voltageMQ9); // Nilai tegangan dicetak ke serial monitor
+  Serial.print("V, Gas Concentration: "); // "V, Gas Concentration: " dicetak ke serial monitor
+  Serial.print(gasConcentrationMQ9); // Nilai konsentrasi gas dicetak ke serial monitor
+  Serial.println(" ppm"); // satuan konsentrasi gas (ppm) dicetak ke serial monitor
 
-  if (gasConcentration >= 1) {
-    digitalWrite(relayPin, HIGH);
-    digitalWrite(buzzerPin, HIGH);
-    delay(100);
-    digitalWrite(buzzerPin, LOW);
-    delay(3000);
-  } else {
-    digitalWrite(relayPin, LOW);
-    digitalWrite(buzzerPin, LOW);
+  if (sensorValueMQ2 >= 300 || gasConcentrationMQ2 >= 1,6) { // Jika nilai sensorValueMQ2 >= 300 atau gasConcentrationMQ2 >= 1,6 ppm, maka kondisi dalam blok if akan dieksekusi.
+    digitalWrite(relayPin, HIGH); // relay aktif dengan set relayPin menjadi HIGH
+    digitalWrite(buzzerPin, HIGH); // buzzer aktif dengan set buzzerPin menjadi HIGH
+    delay(100); // Tunda 0,1 detik ketika buzzer menyala
+    digitalWrite(buzzerPin, LOW); // buzzer mati dengan set buzzerPin menjadi LOW
+    delay(3000); // Tunda 3 detik ketika buzzer mati
+  } else { // Jika nilai sensorValueMQ2 dan gasConcentrationMQ2 tidak memenuhi kondisi dalam blok if, maka kondisi dalam blok else akan dieksekusi.
+    digitalWrite(relayPin, LOW); // relay mati dengan set relayPin menjadi LOW
+    digitalWrite(buzzerPin, LOW); // buzzer mati dengan set buzzerPin menjadi LOW
   }
 
-  delay(1000); // Delay for 1 second before taking the next reading
+  delay(1000); // Tunda 1 detik sebelum membaca hasil berikutnya
+  if (sensorValueMQ9 >= 300 || gasConcentrationMQ9 >= 1,6) { // // Jika nilai sensorValueMQ9 >= 300 atau gasConcentrationMQ9 >= 1,6 ppm, maka kondisi dalam blok if akan dieksekusi.
+    digitalWrite(relayPin, HIGH); // relay aktif dengan set relayPin menjadi HIGH
+    digitalWrite(buzzerPin, HIGH); // buzzer aktif dengan set buzzerPin menjadi HIGH
+    delay(100); // Tunda 0,1 detik ketika buzzer menyala
+    digitalWrite(buzzerPin, LOW); // buzzer mati dengan set buzzerPin menjadi LOW
+    delay(300); // Tunda 3 detik ketika buzzer mati
+  } else { // Jika nilai sensorValueMQ2 dan gasConcentrationMQ2 tidak memenuhi kondisi dalam blok if, maka kondisi dalam blok else akan dieksekusi.
+    digitalWrite(relayPin, LOW); // relay mati dengan set relayPin menjadi LOW
+    digitalWrite(buzzerPin, LOW); // buzzer mati dengan set buzzerPin menjadi LOW
+  }
 }
